@@ -1,0 +1,11 @@
+{
+  "name": "blaze-mod",
+  "owner": { "name": "LOU Xun" },
+  "plugins": [
+    {
+      "name": "blaze",
+      "source": "./",
+      "description": "Browse .blaze/<change_id>/ metadata (plans, tickets) for the jj working copy and its ancestors"
+    }
+  ]
+}
