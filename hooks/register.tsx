@@ -21,8 +21,6 @@ import {
 
 const PANE = "blaze";
 const TITLE = "Blaze";
-// Stand-in for "stop at the branching point" until that revset is worked out.
-const ANCESTOR_DEPTH = 21;
 const TABS: { tab: BlazeTab; label: string; type: string | null }[] = [
   { tab: "plan", label: "PLAN", type: "plans" },
   { tab: "tickets", label: "TICKETS", type: "tickets" },
@@ -128,7 +126,6 @@ async function scan($: EngineInterface): Promise<BlazeView> {
       .filter((entry) => entry.kind === "dir")
       .map((entry) => entry.name),
   );
-  if (dirs.size === 0) return { root, changes: [], error: null };
 
   let log;
   try {
@@ -137,7 +134,7 @@ async function scan($: EngineInterface): Promise<BlazeView> {
         "log",
         "--no-graph",
         "-r",
-        `ancestors(@, ${ANCESTOR_DEPTH})`,
+        "::@ & mutable()",
         "-T",
         LOG_TEMPLATE,
       ]),
@@ -148,9 +145,10 @@ async function scan($: EngineInterface): Promise<BlazeView> {
 
   const changes: BlazeChange[] = [];
   for (const entry of log) {
-    if (!dirs.has(entry.changeId)) continue;
-    const artifacts = await loadArtifacts($, `${blazeDir}/${entry.changeId}`);
-    if (artifacts.length > 0) changes.push({ ...entry, artifacts });
+    const artifacts = dirs.has(entry.changeId)
+      ? await loadArtifacts($, `${blazeDir}/${entry.changeId}`)
+      : [];
+    changes.push({ ...entry, artifacts });
   }
   return { root, changes, error: null };
 }
@@ -327,10 +325,7 @@ export const register: Register = (on) => {
     if (current.changes.length === 0) {
       return (
         <Box flexDirection="column" gap={1}>
-          <Text dimColor>
-            No .blaze/&lt;change_id&gt;/ metadata for @ or its last{" "}
-            {ANCESTOR_DEPTH - 1} ancestors.
-          </Text>
+          <Text dimColor>No mutable changes at @.</Text>
           {refreshButton}
         </Box>
       );
@@ -386,6 +381,14 @@ export const register: Register = (on) => {
       </Box>
     );
 
+    const header = (
+      <Box flexDirection="row" gap={2}>
+        {refreshButton}
+        {changePicker}
+      </Box>
+    );
+    if (change.artifacts.length === 0) return header;
+
     const body =
       activeTab === "plan"
         ? renderPlans()
@@ -395,10 +398,7 @@ export const register: Register = (on) => {
 
     return (
       <Box flexDirection="column" gap={1}>
-        <Box flexDirection="row" gap={2}>
-          {refreshButton}
-          {changePicker}
-        </Box>
+        {header}
         {tabBar}
         {body}
       </Box>
