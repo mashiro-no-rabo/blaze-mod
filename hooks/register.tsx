@@ -381,14 +381,6 @@ export const register: Register = (on) => {
       </Box>
     );
 
-    const header = (
-      <Box flexDirection="row" gap={2}>
-        {refreshButton}
-        {changePicker}
-      </Box>
-    );
-    if (change.artifacts.length === 0) return header;
-
     const body =
       activeTab === "plan"
         ? renderPlans()
@@ -398,7 +390,10 @@ export const register: Register = (on) => {
 
     return (
       <Box flexDirection="column" gap={1}>
-        {header}
+        <Box flexDirection="row" gap={2}>
+          {refreshButton}
+          {changePicker}
+        </Box>
         {tabBar}
         {body}
       </Box>
