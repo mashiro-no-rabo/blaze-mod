@@ -103,6 +103,7 @@ test('pane splits plans, tickets and diff into tabs', async ($, on) => {
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'blaze', surface, ...PANE })
     await ui.press({ key: 'refresh' })
+    await ui.select({ key: 'change', value: PARENT })
 
     expect(await ui.find({ type: 'Select', key: 'change' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: '>PLAN 2<' })).toBeDefined()
@@ -156,8 +157,12 @@ test('pane splits plans, tickets and diff into tabs', async ($, on) => {
 test('pane tabs work on mobile without a change picker', async ($, on) => {
   mockRepo(on)
 
+  const picker = await $.ui.mount({ plugin: 'blaze', surface: 'terminal', ...PANE })
+  await picker.press({ key: 'refresh' })
+  await picker.select({ key: 'change', value: PARENT })
+  await picker.unmount()
+
   const ui = await $.ui.mount({ plugin: 'blaze', surface: 'mobile', ...PANE })
-  await ui.press({ key: 'refresh' })
 
   expect(await ui.find({ type: 'Select', key: 'change' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: 'kkkkkkkk add planner' })).toBeDefined()
@@ -172,5 +177,26 @@ test('pane tabs work on mobile without a change picker', async ($, on) => {
 
   await ui.press({ key: 'tab-diff' })
   expect(await ui.find({ type: 'Text', text: 'Not implemented yet.' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('inline pane shows only a summary line', async ($, on) => {
+  mockRepo(on)
+
+  const ui = await $.ui.mount({ plugin: 'blaze', surface: 'terminal', ...PANE })
+  await ui.press({ key: 'refresh' })
+  await ui.select({ key: 'change', value: PARENT })
+  await ui.press({ key: `tab-tickets` })
+  await ui.redraw({ ...PANE.props, placement: 'inline' })
+
+  expect(await ui.find({ type: 'Text', text: 'kkkkkkkk add planner' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: ' · PLAN 2 · TICKETS 0/1 done' })).toBeDefined()
+  expect(await ui.find({ type: 'Select', key: 'change' })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'tab-plan' })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', text: 'First task' })).toBeUndefined()
+  expect(await ui.find({ type: 'Markdown' })).toBeUndefined()
+
+  await ui.redraw(PANE.props)
+  expect(await ui.find({ type: 'Button', text: 'First task' })).toBeDefined()
   await ui.unmount()
 })

@@ -314,6 +314,16 @@ export const register: Register = (on) => {
       <Button key="refresh" label="↻" plain onPress={() => void refresh($)} />
     );
 
+    if (e.props.placement === "inline") {
+      // Inline seats the pane above the prompt, where a full document crowds the transcript.
+      return (
+        <Box flexDirection="row" gap={1}>
+          {refreshButton}
+          {summary()}
+        </Box>
+      );
+    }
+
     if (current.error !== null) {
       return (
         <Box flexDirection="column" gap={1}>
@@ -481,6 +491,28 @@ export const register: Register = (on) => {
           </Box>
           {renderDoc(artifact, shown.text)}
         </Box>
+      );
+    }
+
+    function summary() {
+      if (current.error !== null)
+        return <Text color="error" wrap="truncate-end">{current.error}</Text>;
+      const c =
+        current.changes.find((x) => x.changeId === changeId) ??
+        current.changes[0];
+      if (c === undefined) return <Text dimColor>No mutable changes at @.</Text>;
+      const plans = c.artifacts.filter((a) => a.type === "plans").length;
+      const tickets = c.artifacts.filter((a) => a.type === "tickets");
+      const done = tickets.filter(
+        (a) => a.status !== null && statusColor(a.status) === "success",
+      ).length;
+      return (
+        <Text wrap="truncate-end">
+          <Text bold>{label(c)}</Text>
+          <Text dimColor>
+            {` · PLAN ${plans} · TICKETS ${done}/${tickets.length} done`}
+          </Text>
+        </Text>
       );
     }
 
